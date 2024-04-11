@@ -1,3 +1,5 @@
 receiver.log
 receiver.toml
 receiver
+json2fields/main.go
+modes/main.go
