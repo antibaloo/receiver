@@ -133,3 +133,42 @@ func (g galileoParsePacket) Save(db *sqlx.DB) error {
 	//fmt.Println(string(result))
 	return err
 }
+
+func (g galileoParsePacket) noJSONSave(db *sqlx.DB) error {
+	err := db.Ping()
+	if err != nil {
+		logger.Fatalf("Соединение с БД не прошло проверку: ", err)
+		return err
+	}
+	_, err = db.Exec(`INSERT INTO records4lens (
+		"recvtime", "termtime", "termnumber", "recnumber","latitude","longitude",
+		"speed","height","pdop", "hdop","vdop","nsat","ns","course","terminalstatus", "voltagepower","voltagebattery",
+		"terminaltemperature", "outputstatus", "inputstatus", "cana0", "fuellevel", "cooltemp", "rpm", "canb0", 
+		"can8bitr0", "can8bitr1", "can8bitr2", "can8bitr3", "can8bitr4", "can8bitr5", "can8bitr6", "can8bitr7", "can8bitr8",
+		"can8bitr9", "can8bitr10", "can8bitr11", "can8bitr12", "can8bitr13", "can8bitr14", "can8bitr15",
+		"can8bitr27", "can8bitr28",	"can8bitr29", "can8bitr30", 
+		"can16bitr0", "can16bitr1", "can16bitr2", "can16bitr3", "can16bitr4", "can16bitr5",	"can16bitr6", "can16bitr7", 
+		"can16bitr8", "can16bitr9", "can16bitr10", "can16bitr11", "can16bitr12", 
+		"can32bitr0", "can32bitr1"
+	)VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
+		$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
+		$46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60
+	)`,
+		time.Unix(g.ReceivedTimestamp, 0), time.Unix(g.NavigationTimestamp, 0), g.TerminalNumber, g.PacketID, g.Latitude, g.Longitude,
+		g.Speed, g.Height, g.Pdop, g.Hdop, g.Vdop, g.Nsat, g.Ns, g.Course, g.TerminalStatus, g.VoltagePower, g.VoltageBattery,
+		g.TerminalTemperature, g.OutputStatus, g.InputStatus, g.Can_a0, g.FuelLevel, g.Cooltemp, g.Rpm, g.Can_b0,
+		g.Can8bitr0, g.Can8bitr1, g.Can8bitr2, g.Can8bitr3, g.Can8bitr4, g.Can8bitr5, g.Can8bitr6, g.Can8bitr7, g.Can8bitr8,
+		g.Can8bitr9, g.Can8bitr10, g.Can8bitr11, g.Can8bitr12, g.Can8bitr13, g.Can8bitr14, g.Can8bitr15,
+		g.Can8bitr27, g.Can8bitr28, g.Can8bitr29, g.Can8bitr30,
+		g.Can16bitr0, g.Can16bitr1, g.Can16bitr2, g.Can16bitr3, g.Can16bitr4, g.Can16bitr5, g.Can16bitr6, g.Can16bitr7,
+		g.Can16bitr8, g.Can16bitr9, g.Can16bitr10, g.Can16bitr11, g.Can16bitr12,
+		g.Can32bitr0, g.Can32bitr1,
+	)
+	if err != nil {
+		return err
+	} else {
+		logger.Infof("Архивная запись %d с терминала %d без JSON записана в таблицу records4lens.", g.PacketID, g.TerminalNumber)
+	}
+	return err
+}

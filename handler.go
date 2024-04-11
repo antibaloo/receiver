@@ -373,6 +373,8 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 		if err := outPkg.Save(db); err != nil {
 			logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
 		}
-
+		if err := outPkg.noJSONSave(db); err != nil {
+			logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
+		}
 	}
 }
