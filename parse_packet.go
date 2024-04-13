@@ -57,6 +57,8 @@ type galileoParsePacket struct {
 	Can8bitr13          uint8     `json:"can8bitr13"`
 	Can8bitr14          string    `json:"can8bitr14"`
 	Can8bitr15          uint8     `json:"can8bitr15"`
+	Can8bitr16          uint8     `json:"can8bitr16"`
+	Can8bitr17          uint8     `json:"can8bitr17"`
 	Can8bitr27          string    `json:"can8bitr27"`
 	Can8bitr28          string    `json:"can8bitr28"`
 	Can8bitr29          string    `json:"can8bitr29"`
@@ -76,6 +78,11 @@ type galileoParsePacket struct {
 	Can16bitr12         uint16    `json:"can16bitr12"`
 	Can32bitr0          uint32    `json:"can32bitr0"`
 	Can32bitr1          uint32    `json:"can32bitr1"`
+	Can32bitr2          uint32    `json:"can32bitr2"`
+	Can32bitr3          uint32    `json:"can32bitr3"`
+	Can32bitr4          uint32    `json:"can32bitr4"`
+	Can32bitr5          uint32    `json:"can32bitr5"`
+	Can32bitr6          uint32    `json:"can32bitr6"`
 	UserTag             [8]uint32 `json:"usertag"`
 }
 
@@ -170,5 +177,98 @@ func (g galileoParsePacket) noJSONSave(db *sqlx.DB) error {
 	} else {
 		logger.Infof("Архивная запись %d с терминала %d без JSON записана в таблицу records4lens.", g.PacketID, g.TerminalNumber)
 	}
+	return err
+}
+
+func (g galileoParsePacket) checkModes(db *sqlx.DB) error {
+	if _, ok := EngineMode[g.TerminalNumber]; !ok {
+		EngineMode[g.TerminalNumber] = &Mode{Mode: 0, Count: 0}
+	}
+	if _, ok := DrillMode[g.TerminalNumber]; !ok {
+		DrillMode[g.TerminalNumber] = &Mode{Mode: 0, Count: 0}
+	}
+	if g.PacketID == 0 {
+		return nil
+	}
+	err := db.Ping()
+	if err != nil {
+		logger.Fatalf("Соединение с БД не прошло проверку: ", err)
+		return err
+	}
+	var curEngineMode int
+	var curDrillMode int
+	// Определение текущего режима двигателя
+	if g.VoltagePower < 10000 {
+		curEngineMode = 1
+	} else if g.VoltagePower > 20000 && g.Can8bitr8 == 0 {
+		curEngineMode = 2
+	} else if g.VoltagePower > 20000 && g.Can8bitr8 > 0 && g.Can16bitr4 == 0 {
+		curEngineMode = 3
+	} else if g.Can16bitr4 > 150 && g.Can8bitr7 < 70 {
+		curEngineMode = 4
+	} else if g.Can16bitr4 > 150 && g.Can8bitr7 >= 70 {
+		curEngineMode = 5
+	}
+
+	if curEngineMode == EngineMode[g.TerminalNumber].Mode {
+		EngineMode[g.TerminalNumber].End = time.Unix(g.NavigationTimestamp, 0)
+		EngineMode[g.TerminalNumber].Count++
+	} else {
+		if EngineMode[g.TerminalNumber].Mode != 0 {
+			if EngineMode[g.TerminalNumber].Count > 1 {
+				_, err = db.Exec(`INSERT INTO enginemods ("termnumber", "beginmod", "endmod", "mode", "count") VALUES ($1,$2,$3, $4)`,
+					g.TerminalNumber,
+					EngineMode[g.TerminalNumber].Begin,
+					EngineMode[g.TerminalNumber].End,
+					EngineMode[g.TerminalNumber].Mode,
+					EngineMode[g.TerminalNumber].Count,
+				)
+			}
+		}
+		EngineMode[g.TerminalNumber].Count = 0
+		EngineMode[g.TerminalNumber].Count++
+		EngineMode[g.TerminalNumber].Begin = time.Unix(g.NavigationTimestamp, 0)
+		EngineMode[g.TerminalNumber].End = time.Unix(g.NavigationTimestamp, 0)
+		EngineMode[g.TerminalNumber].Mode = curEngineMode
+	}
+
+	// Определения текущего режима установки
+	if g.Can16bitr0 > 0 && g.Can8bitr0 > 3 {
+		curDrillMode = 1
+	} else if g.Can8bitr12 == 6 && g.Can16bitr4 > 150 {
+		curDrillMode = 5
+	} else if g.Can16bitr10 > 1 {
+		curDrillMode = 4
+	} else if g.Can16bitr0 == 0 && g.Can8bitr3 > 2 {
+		curDrillMode = 2
+	} else if g.Can8bitr12 == 1 || g.Can8bitr12 == 2 || g.Can8bitr12 == 4 || g.Can8bitr12 == 5 {
+		curDrillMode = 3
+	} else {
+		curDrillMode = 0
+	}
+
+	if curDrillMode == DrillMode[g.TerminalNumber].Mode {
+		DrillMode[g.TerminalNumber].End = time.Unix(g.NavigationTimestamp, 0)
+		DrillMode[g.TerminalNumber].Count++
+	} else {
+		if DrillMode[g.TerminalNumber].Mode != 0 {
+			if DrillMode[g.TerminalNumber].Count > 1 {
+				_, err = db.Exec(`INSERT INTO drillmods ("termnumber", "beginmod", "endmod", "mode", "count") VALUES ($1,$2,$3, $4)`,
+					g.TerminalNumber,
+					DrillMode[g.TerminalNumber].Begin,
+					DrillMode[g.TerminalNumber].End,
+					DrillMode[g.TerminalNumber].Mode,
+					DrillMode[g.TerminalNumber].Count,
+				)
+			}
+
+		}
+		DrillMode[g.TerminalNumber].Count = 0
+		DrillMode[g.TerminalNumber].Begin = time.Unix(g.NavigationTimestamp, 0)
+		DrillMode[g.TerminalNumber].End = time.Unix(g.NavigationTimestamp, 0)
+		DrillMode[g.TerminalNumber].Mode = curDrillMode
+	}
+	logger.Infof("Текущий режим работы двигателя: %v", EngineMode[g.TerminalNumber])
+	logger.Infof("Текущий режим работы установаки: %v", DrillMode[g.TerminalNumber])
 	return err
 }
