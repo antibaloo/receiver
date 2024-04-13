@@ -8,12 +8,22 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
+// СТруктура для хранения данных о режиме работы установки и двигателя
+type Mode struct {
+	Begin, End  time.Time
+	Mode, Count int
+}
+
 var (
-	config settings
-	logger *log.Logger
+	config     settings
+	logger     *log.Logger
+	EngineMode map[uint32]*Mode
+	DrillMode  map[uint32]*Mode
 )
 
 func main() {
+	EngineMode = make(map[uint32]*Mode)
+	DrillMode = make(map[uint32]*Mode)
 	logger = log.New("-")
 	logger.SetHeader("${time_rfc3339_nano} ${short_file}:${line} ${level} -${message}")
 	f, err := os.OpenFile("/usr/local/smartDrillServer/receiver/receiver.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
