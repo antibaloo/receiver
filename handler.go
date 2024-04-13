@@ -276,6 +276,12 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0xa0:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can8bitr15 = uint8(val.Val)
+			case 0xa1:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can8bitr16 = uint8(val.Val)
+			case 0xa2:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can8bitr17 = uint8(val.Val)
 			case 0xac:
 				val := curTag.Value.(*galileo.BitsTag)
 				outPkg.Can8bitr27 = string(val.Val)
@@ -333,6 +339,21 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0xdc:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can32bitr1 = uint32(val.Val)
+			case 0xdd:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr2 = uint32(val.Val)
+			case 0xde:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr3 = uint32(val.Val)
+			case 0xdf:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr4 = uint32(val.Val)
+			case 0xf0:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr5 = uint32(val.Val)
+			case 0xf1:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr6 = uint32(val.Val)
 			case 0xe2:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.UserTag[0] = uint32(val.Val)
@@ -358,12 +379,11 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.UserTag[7] = uint32(val.Val)
 			default:
-				logger.Infof("отсутствует обработчик для регистра %x, переданное значение %v", curTag.Tag, curTag.Value)
+				logger.Infof("отсутствует обработчик для регистра %x, переданное значение %v. Теминал %d", curTag.Tag, curTag.Value, outPkg.TerminalNumber)
 			}
 			prevTag = curTag.Tag
 		}
 
-		logger.Infof("отсутствует обработчик для регистра %x, переданное значение %v")
 		if err := outPkg.Send(config.getZabbixHost()); err != nil {
 			logger.Errorf("Ошибка отправки архивной записи в zabbix по адресу %s: %v", config.getZabbixHost(), err)
 		} else {
@@ -376,5 +396,12 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 		if err := outPkg.noJSONSave(db); err != nil {
 			logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
 		}
+
+		if outPkg.TerminalNumber < 11000 { // ТОлько если Номер терминала меньше 11000, т.е. установка s15
+			if err := outPkg.checkModes(db); err != nil {
+				logger.Errorf("Ошибка записи в БД режима работы установки: %v", err)
+			}
+		}
+
 	}
 }
