@@ -184,7 +184,7 @@ var tagsTable = map[byte]tagDesc{
 	// CAN8BITR25
 	0xAA: {1, "uint"},
 	// CAN8BITR26
-	0xAB: {1, "uint"},
+	0xAB: {1, "bitstring"},
 	// CAN8BITR27
 	0xAC: {1, "bitstring"},
 	// CAN8BITR28
