@@ -6,3 +6,4 @@ modes/main.go
 coords/*
 play/*
 modeService/modeService
+modeService/.env
