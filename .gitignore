@@ -3,3 +3,6 @@ receiver.toml
 receiver
 json2fields/main.go
 modes/main.go
+coords/*
+play/*
+modeService/modeService
