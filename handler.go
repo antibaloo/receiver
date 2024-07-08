@@ -151,9 +151,13 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 					logger.Infof("Архивная запись %d с терминала %d отправлена в zabbix по адресу %s", outPkg.PacketID, outPkg.TerminalNumber, config.getZabbixHost())
 				}
 
-				if err := outPkg.Save(db); err != nil {
-					logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
+				var id int64
+				if id, err = outPkg.Save(db); err != nil {
+					logger.Errorf("Ошибка записи в records архивной записи: %v", err)
+				} else if err := outPkg.noJSONSave(db, id); err != nil {
+					logger.Errorf("Ошибка записи в records4lens архивной записи: %v", err)
 				}
+
 				TerminalNumber := outPkg.TerminalNumber
 				outPkg = galileoParsePacket{
 					TerminalNumber:    TerminalNumber,
@@ -282,6 +286,9 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0xa2:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can8bitr17 = uint8(val.Val)
+			case 0xab:
+				val := curTag.Value.(*galileo.BitsTag)
+				outPkg.Can8bitr26 = string(val.Val)
 			case 0xac:
 				val := curTag.Value.(*galileo.BitsTag)
 				outPkg.Can8bitr27 = string(val.Val)
@@ -390,18 +397,18 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			outPkg.Sent2Zabbix = true
 			logger.Infof("Архивная запись %d с терминала %d отправлена в zabbix по адресу %s", outPkg.PacketID, outPkg.TerminalNumber, config.getZabbixHost())
 		}
-		if err := outPkg.Save(db); err != nil {
-			logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
+		var id int64
+		if id, err = outPkg.Save(db); err != nil {
+			logger.Errorf("Ошибка записи в records архивной записи: %v", err)
+		} else if err := outPkg.noJSONSave(db, id); err != nil {
+			logger.Errorf("Ошибка записи в records4lens архивной записи: %v", err)
 		}
-		if err := outPkg.noJSONSave(db); err != nil {
-			logger.Errorf("Ошибка записи в БД архивной записи: %v", err)
-		}
-
-		if outPkg.TerminalNumber < 11000 { // ТОлько если Номер терминала меньше 11000, т.е. установка s15
-			if err := outPkg.checkModes(db); err != nil {
-				logger.Errorf("Ошибка записи в БД режима работы установки: %v", err)
-			}
-		}
+		/*
+			if outPkg.TerminalNumber < 11000 { // ТОлько если Номер терминала меньше 11000, т.е. установка s15
+				if err := outPkg.checkModes(db); err != nil {
+					logger.Errorf("Ошибка записи в БД режима работы установки: %v", err)
+				}
+			}*/
 
 	}
 }
