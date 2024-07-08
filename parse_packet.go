@@ -59,6 +59,7 @@ type galileoParsePacket struct {
 	Can8bitr15          uint8     `json:"can8bitr15"`
 	Can8bitr16          uint8     `json:"can8bitr16"`
 	Can8bitr17          uint8     `json:"can8bitr17"`
+	Can8bitr26          string    `json:"can8bitr26"`
 	Can8bitr27          string    `json:"can8bitr27"`
 	Can8bitr28          string    `json:"can8bitr28"`
 	Can8bitr29          string    `json:"can8bitr29"`
@@ -115,33 +116,33 @@ func (g galileoParsePacket) Send(zabbixHost string) error {
 	}
 	return nil
 }
-func (g galileoParsePacket) Save(db *sqlx.DB) error {
+func (g galileoParsePacket) Save(db *sqlx.DB) (int64, error) {
 
 	//result, err := json.MarshalIndent(g, " ", " ")
 	result, err := json.Marshal(g)
 	if err != nil {
-		return fmt.Errorf("ошибка парсинга данных: %v", err)
+		return 0, fmt.Errorf("ошибка парсинга данных: %v", err)
 	}
 
 	// check db
 	err = db.Ping()
 	if err != nil {
 		logger.Fatalf("Соединение с БД не прошло проверку: ", err)
-		return err
+		return 0, err
 	}
-
-	_, err = db.Exec(`INSERT INTO "records" ("recvtime", "termtime", "termnumber", "recnumber", "record", "sent") VALUES ($1, $2, $3, $4, $5, $6)`, time.Unix(g.ReceivedTimestamp, 0), time.Unix(g.NavigationTimestamp, 0), g.TerminalNumber, g.PacketID, string(result), g.Sent2Zabbix)
-	if err != nil {
-		return err
+	var id int64
+	if err = db.QueryRow(`INSERT INTO "records" ("recvtime", "termtime", "termnumber", "recnumber", "record", "sent") VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, time.Unix(g.ReceivedTimestamp, 0), time.Unix(g.NavigationTimestamp, 0), g.TerminalNumber, g.PacketID, string(result), g.Sent2Zabbix).Scan(&id); err != nil {
+		return 0, err
 	} else {
 		logger.Infof("Архивная запись %d с терминала %d записана в лог.", g.PacketID, g.TerminalNumber)
+		return id, nil
 	}
-	//logger.Infof("Соединение с БД подтверждено!")
-	//fmt.Println(string(result))
-	return err
 }
 
-func (g galileoParsePacket) noJSONSave(db *sqlx.DB) error {
+func (g galileoParsePacket) noJSONSave(db *sqlx.DB, id int64) error {
+	if id == 0 {
+		return fmt.Errorf("при записи в архив не определен идентификатор")
+	}
 	err := db.Ping()
 	if err != nil {
 		logger.Fatalf("Соединение с БД не прошло проверку: ", err)
@@ -175,11 +176,16 @@ func (g galileoParsePacket) noJSONSave(db *sqlx.DB) error {
 	if err != nil {
 		return err
 	} else {
+		_, errUpdate := db.Exec(`UPDATE records SET export = true WHERE id = $1`, id)
+		if errUpdate != nil {
+			fmt.Println(errUpdate)
+		}
 		logger.Infof("Архивная запись %d с терминала %d без JSON записана в таблицу records4lens.", g.PacketID, g.TerminalNumber)
 	}
 	return err
 }
 
+/*
 func (g galileoParsePacket) checkModes(db *sqlx.DB) error {
 	if _, ok := EngineMode[g.TerminalNumber]; !ok {
 		EngineMode[g.TerminalNumber] = &Mode{Mode: 0, Count: 0}
@@ -268,7 +274,7 @@ func (g galileoParsePacket) checkModes(db *sqlx.DB) error {
 		DrillMode[g.TerminalNumber].End = time.Unix(g.NavigationTimestamp, 0)
 		DrillMode[g.TerminalNumber].Mode = curDrillMode
 	}
-	logger.Infof("Текущий режим работы двигателя: %v", EngineMode[g.TerminalNumber])
-	logger.Infof("Текущий режим работы установаки: %v", DrillMode[g.TerminalNumber])
+	logger.Infof("Текущий режим работы двигателя: %v с терминала %d", EngineMode[g.TerminalNumber], g.TerminalNumber)
+	logger.Infof("Текущий режим работы установаки: %v с терминала %d", DrillMode[g.TerminalNumber], g.TerminalNumber)
 	return err
-}
+}*/
