@@ -165,7 +165,7 @@ func (ch coordHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		encoder.Encode(&responseError)
 		return
 	}
-	row := db.QueryRow("select latitude, longitude from records4lens WHERE termnumber = $1 AND recnumber = 0 ORDER BY termtime DESC LIMIT 1", termnumber)
+	row := db.QueryRow("select latitude, longitude from records4lens WHERE termnumber = $1 AND recnumber = 0 AND latitude<> 0 AND longitude <> 0 ORDER BY termtime DESC LIMIT 1", termnumber)
 	err := row.Scan(&ch.Latitude, &ch.Longitude)
 	if err != nil {
 		responseError.ErrorMessage = fmt.Sprint(err)
