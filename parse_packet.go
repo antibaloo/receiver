@@ -59,6 +59,8 @@ type galileoParsePacket struct {
 	Can8bitr15          uint8     `json:"can8bitr15"`
 	Can8bitr16          uint8     `json:"can8bitr16"`
 	Can8bitr17          uint8     `json:"can8bitr17"`
+	Can8bitr24          uint8     `json:"can8bitr24"`
+	Can8bitr25          uint8     `json:"can8bitr25"`
 	Can8bitr26          string    `json:"can8bitr26"`
 	Can8bitr27          string    `json:"can8bitr27"`
 	Can8bitr28          string    `json:"can8bitr28"`
@@ -84,6 +86,9 @@ type galileoParsePacket struct {
 	Can32bitr4          uint32    `json:"can32bitr4"`
 	Can32bitr5          uint32    `json:"can32bitr5"`
 	Can32bitr6          uint32    `json:"can32bitr6"`
+	Can32bitr7          uint32    `json:"can32bitr7"`
+	Can32bitr8          uint32    `json:"can32bitr8"`
+	Can32bitr9          uint32    `json:"can32bitr9"`
 	UserTag             [8]uint32 `json:"usertag"`
 }
 

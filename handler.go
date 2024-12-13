@@ -286,6 +286,12 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0xa2:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can8bitr17 = uint8(val.Val)
+			case 0xa9:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can8bitr24 = uint8(val.Val)
+			case 0xaa:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can8bitr25 = uint8(val.Val)
 			case 0xab:
 				val := curTag.Value.(*galileo.BitsTag)
 				outPkg.Can8bitr26 = string(val.Val)
@@ -361,6 +367,15 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0xf1:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can32bitr6 = uint32(val.Val)
+			case 0xf2:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr7 = uint32(val.Val)
+			case 0xf3:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr8 = uint32(val.Val)
+			case 0xf4:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Can32bitr9 = uint32(val.Val)
 			case 0xe2:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.UserTag[0] = uint32(val.Val)
