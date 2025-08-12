@@ -15,8 +15,8 @@ type galileoParsePacket struct {
 	HwVer               uint8     `json:"hwVer"`
 	SwVer               uint8     `json:"swVer"`
 	IMEI                string    `json:"IMEI"`
-	PacketID            uint32    `json:"-"`
-	NavigationTimestamp int64     `json:"-"`
+	PacketID            uint32    `json:"recnumber"`
+	NavigationTimestamp int64     `json:"termtime"`
 	Milliseconds        uint16    `json:"-"`
 	ReceivedTimestamp   int64     `json:"-"`
 	Delay               int64     `json:"delay"`
@@ -36,6 +36,7 @@ type galileoParsePacket struct {
 	TerminalTemperature int8      `json:"terminaltemperature"`
 	OutputStatus        string    `json:"outputstatus"`
 	InputStatus         string    `json:"inputstatus"`
+	Channel             uint8     `json:"channel"`
 	Can_a0              uint32    `json:"can_a0"`
 	FuelLevel           uint8     `json:"fuellevel"`
 	Cooltemp            int8      `json:"cooltemp"`
