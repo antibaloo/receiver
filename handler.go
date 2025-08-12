@@ -221,6 +221,9 @@ func handleRecvPkg(conn net.Conn, ttl time.Duration) {
 			case 0x46:
 				val := curTag.Value.(*galileo.BitsTag)
 				outPkg.InputStatus = string(val.Val)
+			case 0x49:
+				val := curTag.Value.(*galileo.UintTag)
+				outPkg.Channel = uint8(val.Val)
 			case 0xc0:
 				val := curTag.Value.(*galileo.UintTag)
 				outPkg.Can_a0 = uint32(val.Val) / 2
